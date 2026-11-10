@@ -15,6 +15,7 @@ import { EventModule } from './event/event.module';
 import { AdvertisementsModule } from './advertisements/advertisements.module';
 import { PaymentsModule } from './payments/payments.module';
 import { ActivityLogsModule } from './activity-logs/activity-logs.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { ActivityLogsModule } from './activity-logs/activity-logs.module';
     AdvertisementsModule,
     PaymentsModule,
     ActivityLogsModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
