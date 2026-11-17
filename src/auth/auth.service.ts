@@ -37,46 +37,46 @@ export class AuthService
     }
 
 
-async login(loginDto: LoginDto) {
-  
-  const user = await this.userService.getByEmail(
-    loginDto.email,
-  );
+    async login(loginDto: LoginDto) {
+      
+      const user = await this.userService.getByEmail(
+        loginDto.email,
+      );
 
-  if (!user) {
-    throw new UnauthorizedException('Invalid email or password');
-  }
+      if (!user) {
+        throw new UnauthorizedException('Invalid email');
+      }
 
-  const isPasswordMatched = await bcrypt.compare(
-    loginDto.password,
-    user.passwordHash,
-  );
+      const isPasswordMatched = await bcrypt.compare(
+        loginDto.password,
+        user.passwordHash,
+      );
 
-  if (!isPasswordMatched) {
-    throw new UnauthorizedException('Invalid email or password');
-  }
+      if (!isPasswordMatched) {
+        throw new UnauthorizedException('Invalid password');
+      }
 
-  // Check account status
-  if (user.status !== UserStatus.ACTIVE) {
-    throw new UnauthorizedException('Your account is not active');
-  }
+      // Check account status
+      if (user.status !== UserStatus.ACTIVE) {
+        throw new UnauthorizedException('Your account is not active');
+      }
 
-  // Create JWT payload
-  const payload = {
-    sub: user.id,
-    email: user.email,
-    role: user.role,
-  };
+      // Create JWT payload
+      const payload = {
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+      };
 
-  // Generate JWT token
-  const accessToken = await this.jwtService.signAsync(payload);
+      // Generate JWT token
+      const accessToken = await this.jwtService.signAsync(payload);
 
-  // Return safe user information and token
-  return {
-    message: 'Login successful',
-    access_token: accessToken,
-  };
-}
+      // Return safe user information and token
+      return {
+        message: 'Login successful',
+        access_token: accessToken,
+      };
+    }
 
 
 
