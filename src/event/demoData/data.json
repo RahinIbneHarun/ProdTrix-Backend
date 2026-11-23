@@ -1,0 +1,37 @@
+
+  
+[
+
+{
+  "This is the API name not for use": "POST /events",
+  "name": "AI Research Workshop",
+  "tagline": "Explore the future of AI",
+  "description": "A workshop for students interested in AI and machine learning.",
+  "coverUrl": "https://example.com/event-cover.png",
+  "eventType": "workshop",
+  "startsAt": "2026-12-15T09:00:00+06:00",
+  "endsAt": "2026-12-15T16:00:00+06:00",
+  "location": "Dhaka, Bangladesh",
+  "visibility": "public"
+},
+
+{
+  "This is the API name not for use" : "PATCH /events/:id",
+  "name": "Advanced AI Research Workshop",
+  "location": "AIUB, Dhaka"
+  
+},
+
+{
+  "This is the API name not for use":"POST /events/:eventId/members",
+  "userId": "USER_UUID_HERE"
+},
+
+
+{
+  "This is the API name not for use":"PATCH /events/:eventId/members/:userId",
+  "status": "accepted"
+}
+
+
+]

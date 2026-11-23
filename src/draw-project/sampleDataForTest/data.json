@@ -1,0 +1,47 @@
+
+  
+[
+  {
+  "This is the API name not for use":"POST /draw-projects",
+  "name": "My First Drawing",
+  "description": "A simple landscape drawing",
+  "canvasData": {
+    "version": 1,
+    "objects": [
+      {
+        "type": "rectangle",
+        "x": 100,
+        "y": 150,
+        "width": 200,
+        "height": 100,
+        "fill": "#3498db"
+      }
+    ]
+  },
+  "previewUrl": "https://example.com/preview.png"
+ }
+,
+
+{
+  "This is the API name not for use":"PATCH /draw-projects/:id",
+  "name": "Updated Landscape Drawing",
+  "canvasData": {
+    "version": 1,
+    "objects": []
+  }
+}
+,
+
+{
+  "This is the API name not for use":"PATCH /draw-projects/:id/status",
+  "status": "published"
+},
+
+
+{
+  "This is the API name not for use":"PATCH /draw-projects/:id/post",
+  "postId": "YOUR_POST_UUID"
+}
+
+
+]
