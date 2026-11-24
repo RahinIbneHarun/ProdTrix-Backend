@@ -4,9 +4,10 @@ import { ReactionsController } from './reactions.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Reaction } from './entities/reaction.entity';
 import { Post } from 'src/posts/entities/post.entity';
+import { ActivityLogsModule } from 'src/activity-logs/activity-logs.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Reaction, Post])],
+  imports: [TypeOrmModule.forFeature([Reaction, Post]), ActivityLogsModule],
   controllers: [ReactionsController],
   providers: [ReactionsService],
 })

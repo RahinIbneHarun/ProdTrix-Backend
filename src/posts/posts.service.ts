@@ -5,11 +5,17 @@ import { Repository } from 'typeorm';
 import { CreatePostDto } from './dtos/create-post.dto';
 import { UserRole } from 'src/users/enums/user-role.enum';
 import { UpdatePostDto } from './dtos/update-post.dto';
+import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 
 @Injectable()
 export class PostsService 
 {
-    constructor(@InjectRepository(Post) private readonly postRepository: Repository<Post>,){}
+    constructor(
+        @InjectRepository(Post) 
+        private readonly postRepository: Repository<Post>,
+
+        private readonly activityLogsService: ActivityLogsService,
+    ) {}
 
 
     async createPost(userId: string, dto: CreatePostDto) {
@@ -19,6 +25,16 @@ export class PostsService
         });
 
         const savedPost = await this.postRepository.save(post);
+
+        await this.activityLogsService.create({
+            userId,
+            action: 'POST_CREATED',
+            entityType: 'Post',
+            entityId: savedPost.id,
+            details: {
+            title: savedPost.title,
+            },
+        });
 
         return {
             message: 'Post created successfully',
@@ -93,6 +109,18 @@ export class PostsService
 
         const updatedPost = await this.postRepository.save(post);
 
+
+        await this.activityLogsService.createSafely({
+        userId: userId,
+        action: 'POST_UPDATED',
+        entityType: 'Post',
+        entityId: post.id,
+        details: {
+            title: post.title,
+        },
+        });
+
+
         return {
             message: 'Post updated successfully',
             data: updatedPost,
@@ -122,6 +150,18 @@ export class PostsService
         }
 
         await this.postRepository.softDelete(id);
+
+
+        await this.activityLogsService.createSafely({
+        userId: userId,
+        action: 'POST_DELETED',
+        entityType: 'Post',
+        entityId: post.id,
+        details: {
+            title: post.title,
+        },
+        });
+
 
         return {
             message: 'Post deleted successfully',

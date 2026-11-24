@@ -13,12 +13,33 @@ import { UserRole } from '../users/enums/user-role.enum';
 
 import { CreateActivityLogDto } from './dtos/create-activity-log.dto';
 
+import { Logger } from '@nestjs/common';
+
 @Injectable()
 export class ActivityLogsService {
+    
   constructor(
     @InjectRepository(ActivityLog)
     private readonly activityLogRepository: Repository<ActivityLog>,
   ) {}
+
+
+
+private readonly logger = new Logger(ActivityLogsService.name);
+
+async createSafely(createDto: CreateActivityLogDto) {
+  try {
+    return await this.create(createDto);
+  } catch (error) {
+    this.logger.error(
+      `Failed to create activity log: ${createDto.action}`,
+      error instanceof Error ? error.stack : String(error),
+    );
+
+    return null;
+  }
+}
+
 
   // Create an activity log (used internally by other modules)
   async create(createDto: CreateActivityLogDto) {

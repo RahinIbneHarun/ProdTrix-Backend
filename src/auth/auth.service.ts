@@ -5,13 +5,15 @@ import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
 import { LoginDto } from './dtos/login.dto';
 import { UserStatus } from 'src/users/enums/user-status.enum';
+import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 
 @Injectable()
 export class AuthService 
 {
     constructor(
         private readonly userService: UsersService,
-        private readonly jwtService: JwtService
+        private readonly jwtService: JwtService,
+        private readonly activityLogsService: ActivityLogsService,
     ){} 
 
     async register(registerDto: RegisterDto){
@@ -30,6 +32,16 @@ export class AuthService
           passwordHash: hashedPassword,
         });
 
+        await this.activityLogsService.createSafely({
+          userId: user.data.id,
+          action: 'USER_REGISTERED',
+          entityType: 'User',
+          entityId: user.data.id,
+          details: {
+            email: user.data.email,
+          },
+        });
+
         return {
           message: 'Registration successful',
           data: user,
@@ -42,6 +54,7 @@ export class AuthService
       const user = await this.userService.getByEmail(
         loginDto.email,
       );
+      //console.log(user);
 
       if (!user) {
         throw new UnauthorizedException('Invalid email');
@@ -70,6 +83,17 @@ export class AuthService
 
       // Generate JWT token
       const accessToken = await this.jwtService.signAsync(payload);
+
+
+    await this.activityLogsService.createSafely({
+      userId: user.id,
+      action: 'USER_LOGGED_IN',
+      entityType: 'User',
+      entityId: user.id,
+      details: {
+        email: user.email,
+      },
+    });
 
       // Return safe user information and token
       return {

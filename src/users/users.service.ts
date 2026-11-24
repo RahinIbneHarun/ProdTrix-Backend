@@ -6,12 +6,17 @@ import { CreateUserDto } from './dtos/create-user.dto';
 import { Profile } from './entities/profile.entity';
 import { UpdateProfileDto } from './dtos/update-profile.dto';
 import { UserStatus } from './enums/user-status.enum';
+import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 
 @Injectable()
 export class UsersService {
     constructor(
-        @InjectRepository(User) private readonly userRepository: Repository<User>,
-        @InjectRepository(Profile) private readonly profileRepository: Repository<Profile>,
+        @InjectRepository(User)
+        private readonly userRepository: Repository<User>,
+        @InjectRepository(Profile) 
+        private readonly profileRepository: Repository<Profile>,
+
+        private readonly activityLogsService: ActivityLogsService,
     ){}
 
     async get() {
@@ -37,7 +42,7 @@ export class UsersService {
         await this.userRepository.save(user);
         return{
             message:"User created successfully",
-            data: true
+            data: user
         }
     }
 
@@ -147,6 +152,18 @@ export class UsersService {
 
             const { passwordHash, ...safeUser } = user;
 
+
+            await this.activityLogsService.createSafely({
+            userId: user.id,
+            action: 'PROFILE_UPDATED',
+            entityType: 'User',
+            entityId: user.id,
+            details: {
+                updatedFields: Object.keys(dto),
+            },
+            });
+
+
             return {
                 message: 'Profile updated successfully',
                 data: {
@@ -174,6 +191,13 @@ export class UsersService {
         user.status = UserStatus.DEACTIVATED;
 
         await this.userRepository.save(user);
+
+        await this.activityLogsService.createSafely({
+            userId,
+            action: 'ACCOUNT_DEACTIVATED',
+            entityType: 'User',
+            entityId: userId,
+        });
 
         return {
             message: 'Your account has been deactivated successfully',

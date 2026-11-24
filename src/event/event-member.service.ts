@@ -17,6 +17,7 @@ import { EventMemberStatus } from './enums/event-member-status.enum';
 
 import { CreateEventMemberDto } from './dtos/create-event-member.dto';
 import { UpdateEventMemberStatusDto } from './dtos/update-event-member-status.dto';
+import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 
 @Injectable()
 export class EventMemberService {
@@ -29,6 +30,8 @@ export class EventMemberService {
 
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+
+    private readonly activityLogsService: ActivityLogsService
   ) {}
 
   // Invite a user to an event
@@ -69,6 +72,18 @@ export class EventMemberService {
     const member = this.eventMemberRepository.create({
       eventId,
       userId: createDto.userId,
+    });
+
+    await this.activityLogsService.createSafely({
+      userId: creatorId,
+      action: 'EVENT_MEMBER_INVITED',
+      entityType: 'EventMember',
+      entityId: null,
+      details: {
+        eventId,
+        invitedUserId: member.userId,
+        status: member.status,
+      },
     });
 
     return this.eventMemberRepository.save(member);
@@ -207,6 +222,34 @@ export class EventMemberService {
 
     member.status = updateDto.status;
 
+
+    if (updateDto.status === EventMemberStatus.INTERESTED) {
+      await this.activityLogsService.createSafely({
+        userId: currentUserId,
+        action: 'EVENT_INVITATION_ACCEPTED',
+        entityType: 'EventMember',
+        entityId: null,
+        details: {
+          eventId,
+          memberUserId: userId,
+        },
+      });
+    }
+    else{
+      await this.activityLogsService.createSafely({
+        userId: currentUserId,
+        action: 'EVENT_MEMBER_STATUS_CHANGED',
+        entityType: 'EventMember',
+        entityId: null,
+        details: {
+          eventId,
+          memberUserId: userId,
+          newStatus: member.status,
+        },
+      });
+    }
+
+
     return this.eventMemberRepository.save(member);
   }
 
@@ -232,6 +275,19 @@ export class EventMemberService {
     }
 
     await this.eventMemberRepository.remove(member);
+
+
+    await this.activityLogsService.createSafely({
+      userId: currentUserId,
+      action: 'EVENT_MEMBER_REMOVED',
+      entityType: 'EventMember',
+      entityId: null,
+      details: {
+        eventId,
+        removedUserId: userId,
+      },
+    });
+
 
     return {
       message: 'Event member removed successfully',

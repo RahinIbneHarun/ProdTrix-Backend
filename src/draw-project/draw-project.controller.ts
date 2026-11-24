@@ -74,9 +74,10 @@ export class DrawProjectController {
   @Roles(UserRole.SUPER_ADMIN)
   updateStatus(
     @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() req:any,
     @Body() updateDto: UpdateDrawProjectStatusDto,
   ) {
-    return this.drawProjectService.updateStatus(id, updateDto);
+    return this.drawProjectService.updateStatus(id, req.user.id ,updateDto);
   }
 
   // Link project to a post

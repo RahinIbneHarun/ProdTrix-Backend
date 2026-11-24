@@ -15,6 +15,7 @@ import { CreateCommentDto } from './dtos/create-comment.dto';
 import { UpdateCommentDto } from './dtos/update-comment.dto';
 
 import { UserRole } from '../users/enums/user-role.enum';
+import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 
 @Injectable()
 export class CommentsService 
@@ -25,6 +26,9 @@ export class CommentsService
 
     @InjectRepository(Post)
     private readonly postRepository: Repository<Post>,
+
+    private readonly activityLogsService: ActivityLogsService,
+
     ) {}
 
 
@@ -93,6 +97,19 @@ export class CommentsService
         });
 
         const savedComment = await this.commentRepository.save(comment);
+
+
+        await this.activityLogsService.createSafely({
+        userId,
+        action: 'COMMENT_CREATED',
+        entityType: 'Comment',
+        entityId: savedComment.id,
+        details: {
+            postId: savedComment.postId,
+            parentCommentId: savedComment.parentCommentId,
+        },
+        });
+
 
         return {
             message: dto.parentCommentId
@@ -166,6 +183,17 @@ export class CommentsService
         const updatedComment =
             await this.commentRepository.save(comment);
 
+        await this.activityLogsService.createSafely({
+        userId: userId,
+        action: 'COMMENT_UPDATED',
+        entityType: 'Comment',
+        entityId: comment.id,
+        details: {
+            postId: comment.postId,
+        },
+        });
+
+
         return {
             message: 'Comment updated successfully',
             data: updatedComment,
@@ -185,6 +213,18 @@ export class CommentsService
         );
 
         await this.commentRepository.remove(comment);
+
+
+        await this.activityLogsService.createSafely({
+        userId: userId,
+        action: 'COMMENT_DELETED',
+        entityType: 'Comment',
+        entityId: comment.id,
+        details: {
+            postId: comment.postId,
+        },
+        });
+
 
         return {
             message: 'Comment deleted successfully',

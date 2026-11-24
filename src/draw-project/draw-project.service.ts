@@ -17,6 +17,7 @@ import { UserRole } from '../users/enums/user-role.enum';
 import { CreateDrawProjectDto } from './dtos/create-draw-project.dto';
 import { UpdateDrawProjectDto } from './dtos/update-draw-project.dto';
 import { UpdateDrawProjectStatusDto } from './dtos/update-draw-project-status.dto';
+import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 
 @Injectable()
 export class DrawProjectService {
@@ -26,6 +27,8 @@ export class DrawProjectService {
 
     @InjectRepository(Post)
     private readonly postRepository: Repository<Post>,
+
+    private readonly activityLogsService: ActivityLogsService
   ) {}
 
   // Create a new draw project
@@ -33,6 +36,16 @@ export class DrawProjectService {
     const project = this.drawProjectRepository.create({
       ...createDto,
       userId,
+    });
+
+    await this.activityLogsService.createSafely({
+      userId,
+      action: 'DRAW_PROJECT_CREATED',
+      entityType: 'DrawProject',
+      entityId: project.id,
+      details: {
+        name: project.name,
+      },
     });
 
     return this.drawProjectRepository.save(project);
@@ -162,12 +175,25 @@ export class DrawProjectService {
 
     Object.assign(project, updateDto);
 
+
+    await this.activityLogsService.createSafely({
+      userId: currentUserId,
+      action: 'DRAW_PROJECT_UPDATED',
+      entityType: 'DrawProject',
+      entityId: project.id,
+      details: {
+        name: project.name,
+      },
+    });
+
+
     return this.drawProjectRepository.save(project);
   }
 
   // Update project status (Super Admin only)
   async updateStatus(
     id: string,
+    adminUserId: string,
     updateDto: UpdateDrawProjectStatusDto,
   ) {
     const project = await this.drawProjectRepository.findOne({
@@ -179,6 +205,19 @@ export class DrawProjectService {
     }
 
     project.status = updateDto.status;
+
+
+  await this.activityLogsService.createSafely({
+    userId: adminUserId,
+    action: 'DRAW_PROJECT_STATUS_CHANGED',
+    entityType: 'DrawProject',
+    entityId: project.id,
+    details: {
+      newStatus: project.status,
+      ownerId: project.userId,
+    },
+  });
+
 
     return this.drawProjectRepository.save(project);
   }
@@ -232,6 +271,16 @@ export class DrawProjectService {
 
     project.postId = postId;
 
+    await this.activityLogsService.createSafely({
+      userId: currentUserId,
+      action: 'DRAW_PROJECT_POST_LINKED',
+      entityType: 'DrawProject',
+      entityId: project.id,
+      details: {
+        postId: project.postId,
+      },
+    });
+
     return this.drawProjectRepository.save(project);
   }
 
@@ -255,6 +304,13 @@ export class DrawProjectService {
 
     project.postId = null;
 
+    await this.activityLogsService.createSafely({
+      userId: currentUserId,
+      action: 'DRAW_PROJECT_POST_UNLINKED',
+      entityType: 'DrawProject',
+      entityId: project.id,
+    });
+
     return this.drawProjectRepository.save(project);
   }
 
@@ -271,6 +327,16 @@ export class DrawProjectService {
     );
 
     await this.drawProjectRepository.remove(project);
+
+    await this.activityLogsService.createSafely({
+      userId: currentUserId,
+      action: 'DRAW_PROJECT_DELETED',
+      entityType: 'DrawProject',
+      entityId: project.id,
+      details: {
+        name: project.name,
+      },
+    });
 
     return {
       message: 'Draw project deleted successfully',

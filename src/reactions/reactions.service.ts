@@ -15,6 +15,7 @@ import { CreateReactionDto } from './dtos/create-reaction.dto';
 import { UpdateReactionDto } from './dtos/update-reaction.dto';
 
 import { UserRole } from '../users/enums/user-role.enum';
+import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 
 @Injectable()
 export class ReactionsService 
@@ -25,6 +26,8 @@ export class ReactionsService
 
         @InjectRepository(Post)
         private readonly postRepository: Repository<Post>,
+
+        private readonly activityLogsService: ActivityLogsService,
     ) {}
 
     private async findReactionWithAccess(
@@ -86,8 +89,18 @@ export class ReactionsService
             type: dto.type,
         });
 
-        const savedReaction =
-            await this.reactionRepository.save(reaction);
+        const savedReaction = await this.reactionRepository.save(reaction);
+
+        await this.activityLogsService.createSafely({
+            userId,
+            action: 'REACTION_ADDED',
+            entityType: 'Reaction',
+            entityId: savedReaction.id,
+            details: {
+                postId: savedReaction.postId,
+                reactionType: savedReaction.type,
+            },
+        });
 
         return {
             message: 'Reaction added successfully',
@@ -160,6 +173,19 @@ export class ReactionsService
         const updatedReaction =
             await this.reactionRepository.save(reaction);
 
+        
+        await this.activityLogsService.createSafely({
+            userId: userId,
+            action: 'REACTION_CHANGED',
+            entityType: 'Reaction',
+            entityId: reaction.id,
+            details: {
+                postId: reaction.postId,
+                newType: reaction.type,
+            },
+        });
+
+
         return {
             message: 'Reaction updated successfully',
             data: updatedReaction,
@@ -179,6 +205,17 @@ export class ReactionsService
         );
 
         await this.reactionRepository.remove(reaction);
+
+        await this.activityLogsService.createSafely({
+            userId: userId,
+            action: 'REACTION_REMOVED',
+            entityType: 'Reaction',
+            entityId: reaction.id,
+            details: {
+                postId: reaction.postId,
+                reactionType: reaction.type,
+            },
+        });
 
         return {
             message: 'Reaction removed successfully',

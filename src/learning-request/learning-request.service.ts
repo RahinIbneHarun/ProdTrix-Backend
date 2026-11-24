@@ -15,15 +15,19 @@ import { UserStatus } from '../users/enums/user-status.enum';
 import { CreateLearningRequestDto } from './dtos/create-learning-request.dto';
 import { UpdateLearningRequestDto } from './dtos/update-learning-request.dto';
 import { UpdateLearningRequestStatusDto } from './dtos/update-learning-request-status.dto';
+import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 
 @Injectable()
 export class LearningRequestService {
+
   constructor(
     @InjectRepository(LearningRequest)
     private readonly learningRequestRepository: Repository<LearningRequest>,
 
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+
+    private readonly activityLogsService: ActivityLogsService
   ) {}
 
   // Create a learning request
@@ -34,6 +38,19 @@ export class LearningRequestService {
     const learningRequest = this.learningRequestRepository.create({
       ...createDto,
       userId,
+    });
+
+
+    await this.activityLogsService.createSafely({
+      userId,
+      action: 'LEARNING_REQUEST_CREATED',
+      entityType: 'LearningRequest',
+      entityId: learningRequest.id,
+      details: {
+        chapter: learningRequest.chapter,
+        lesson: learningRequest.lesson,
+        topic: learningRequest.topic,
+      },
     });
 
     return this.learningRequestRepository.save(learningRequest);
@@ -148,12 +165,24 @@ export class LearningRequestService {
 
     Object.assign(request, updateDto);
 
+
+    await this.activityLogsService.createSafely({
+      userId: currentUserId,
+      action: 'LEARNING_REQUEST_UPDATED',
+      entityType: 'LearningRequest',
+      entityId: request.id,
+      details: {
+        updatedFields: Object.keys(updateDto),
+      },
+    });
+
     return this.learningRequestRepository.save(request);
   }
 
   // Update request status (Super Admin only)
   async updateStatus(
     id: string,
+    adminUserId: string,
     updateDto: UpdateLearningRequestStatusDto,
   ) {
     const request = await this.learningRequestRepository.findOne({
@@ -165,6 +194,19 @@ export class LearningRequestService {
     }
 
     request.status = updateDto.status;
+
+
+    await this.activityLogsService.createSafely({
+      userId: adminUserId,
+      action: 'LEARNING_REQUEST_STATUS_CHANGED',
+      entityType: 'LearningRequest',
+      entityId: request.id,
+      details: {
+        newStatus: request.status,
+        targetUserId: request.userId,
+      },
+    });
+
 
     return this.learningRequestRepository.save(request);
   }
@@ -182,6 +224,17 @@ export class LearningRequestService {
     );
 
     await this.learningRequestRepository.remove(request);
+
+
+    await this.activityLogsService.createSafely({
+      userId: currentUserId,
+      action: 'LEARNING_REQUEST_DELETED',
+      entityType: 'LearningRequest',
+      entityId: request.id,
+      details: {
+        topic: request.topic,
+      },
+    });
 
     return {
       message: 'Learning request deleted successfully',

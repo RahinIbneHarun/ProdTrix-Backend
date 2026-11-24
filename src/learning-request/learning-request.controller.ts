@@ -74,8 +74,9 @@ export class LearningRequestController {
   updateStatus(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() updateDto: UpdateLearningRequestStatusDto,
+    @Req() req: any,
   ) {
-    return this.learningRequestService.updateStatus(id, updateDto);
+    return this.learningRequestService.updateStatus(id, req.user.id, updateDto);
   }
 
   // Get request by ID

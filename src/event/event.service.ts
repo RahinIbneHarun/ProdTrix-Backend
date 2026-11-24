@@ -14,6 +14,7 @@ import { UserRole } from '../users/enums/user-role.enum';
 
 import { CreateEventDto } from './dtos/create-event.dto';
 import { UpdateEventDto } from './dtos/update-event.dto';
+import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 
 @Injectable()
 export class EventService {
@@ -23,6 +24,8 @@ export class EventService {
 
     @InjectRepository(EventMember)
     private readonly eventMemberRepository: Repository<EventMember>,
+
+    private readonly activityLogsService: ActivityLogsService,
   ) {}
 
   // Create event
@@ -32,6 +35,18 @@ export class EventService {
     const event = this.eventRepository.create({
       ...createDto,
       creatorId,
+    });
+
+    await this.activityLogsService.createSafely({
+      userId: creatorId,
+      action: 'EVENT_CREATED',
+      entityType: 'Event',
+      entityId: event.id,
+      details: {
+        name: event.name,
+        eventType: event.eventType,
+        startsAt: event.startsAt,
+      },
     });
 
     return this.eventRepository.save(event);
@@ -200,6 +215,17 @@ export class EventService {
 
     Object.assign(event, updateDto);
 
+
+    await this.activityLogsService.createSafely({
+      userId: currentUserId,
+      action: 'EVENT_UPDATED',
+      entityType: 'Event',
+      entityId: event.id,
+      details: {
+        name: event.name,
+      },
+    });
+
     return this.eventRepository.save(event);
   }
 
@@ -216,6 +242,17 @@ export class EventService {
     );
 
     await this.eventRepository.remove(event);
+
+
+    await this.activityLogsService.createSafely({
+      userId: currentUserId,
+      action: 'EVENT_DELETED',
+      entityType: 'Event',
+      entityId: event.id,
+      details: {
+        name: event.name,
+      },
+    });
 
     return {
       message: 'Event deleted successfully',

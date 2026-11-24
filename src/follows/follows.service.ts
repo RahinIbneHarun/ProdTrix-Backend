@@ -14,6 +14,7 @@ import { User } from '../users/entities/user.entity';
 
 import { UserRole } from '../users/enums/user-role.enum';
 import { UserStatus } from '../users/enums/user-status.enum';
+import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 
 @Injectable()
 export class FollowsService {
@@ -23,6 +24,8 @@ export class FollowsService {
     private readonly followRepository: Repository<Follow>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+
+    private readonly activityLogsService: ActivityLogsService,
   ) {}
 
 
@@ -70,6 +73,18 @@ export class FollowsService {
       followerId,
       followingId,
     });
+
+
+    await this.activityLogsService.createSafely({
+      userId: followerId,
+      action: 'USER_FOLLOWED',
+      entityType: 'Follow',
+      entityId: follow.id,
+      details: {
+        followingId: follow.followingId,
+      },
+    });
+
 
     try {
       const savedFollow = await this.followRepository.save(follow);
@@ -216,6 +231,18 @@ export class FollowsService {
     }
 
     await this.followRepository.remove(follow);
+
+
+    await this.activityLogsService.createSafely({
+      userId: followerId,
+      action: 'USER_UNFOLLOWED',
+      entityType: 'Follow',
+      entityId: follow.id,
+      details: {
+        followingId: follow.followingId,
+      },
+    });
+
 
     return {
       message: 'User unfollowed successfully',

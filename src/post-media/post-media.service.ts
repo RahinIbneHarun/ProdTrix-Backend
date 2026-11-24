@@ -12,6 +12,7 @@ import { Post } from '../posts/entities/post.entity';
 import { CreatePostMediaDto } from './dtos/create-post-media.dto';
 import { UserRole } from '../users/enums/user-role.enum';
 import { UpdatePostMediaDto } from './dtos/update-post-media.dto';
+import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 
 @Injectable()
 export class PostMediaService 
@@ -22,6 +23,8 @@ export class PostMediaService
 
     @InjectRepository(Post)
     private readonly postRepository: Repository<Post>,
+
+    private readonly activityLogsService: ActivityLogsService,
     ) {}
 
 
@@ -56,6 +59,20 @@ export class PostMediaService
         });
 
         const savedMedia = await this.postMediaRepository.save(media);
+
+
+        await this.activityLogsService.createSafely({
+        userId: userId,
+        action: 'POST_MEDIA_ADDED',
+        entityType: 'PostMedia',
+        entityId: savedMedia.id,
+        details: {
+            postId: savedMedia.postId,
+            mediaType: savedMedia.mediaType,
+            fileName: savedMedia.fileName,
+        },
+        });
+
 
         return {
             message: 'Post media added successfully',
@@ -165,8 +182,19 @@ export class PostMediaService
 
         Object.assign(media, dto);
 
-        const updatedMedia =
-            await this.postMediaRepository.save(media);
+        const updatedMedia = await this.postMediaRepository.save(media);
+
+
+        await this.activityLogsService.createSafely({
+            userId: userId,
+            action: 'POST_MEDIA_UPDATED',
+            entityType: 'PostMedia',
+            entityId: media.id,
+            details: {
+                fileName: media.fileName,
+            },
+        });
+
 
         return {
             message: 'Post media updated successfully',
@@ -187,6 +215,21 @@ export class PostMediaService
         );
 
         await this.postMediaRepository.remove(media);
+
+
+        
+        await this.activityLogsService.createSafely({
+        userId: userId,
+        action: 'POST_MEDIA_DELETED',
+        entityType: 'PostMedia',
+        entityId: media.id,
+        details: {
+            postId: media.postId,
+            fileName: media.fileName,
+        },
+        });
+
+
 
         return {
             message: 'Post media deleted successfully',
